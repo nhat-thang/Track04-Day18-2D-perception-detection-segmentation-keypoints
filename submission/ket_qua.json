@@ -1,0 +1,73 @@
+{
+  "progress": {
+    "box_iou": "ok",
+    "nms": "ok",
+    "batched_nms": "ok",
+    "mask_iou": "ok",
+    "polygon_to_mask": "ok",
+    "mask_to_yolo_seg": "ok",
+    "autolabel": "ok",
+    "oks": "ok",
+    "joint_angle": "ok",
+    "FLIP_IDX": "ok"
+  },
+  "latency": [
+    {
+      "Cấu hình": "one-to-many + NMS, conf 0.25",
+      "preprocess (ms)": 1.74,
+      "inference (ms)": 9.62,
+      "postprocess (ms)": 1.25,
+      "số box": 5
+    },
+    {
+      "Cấu hình": "one-to-many + NMS, conf 0.001",
+      "preprocess (ms)": 1.7,
+      "inference (ms)": 9.29,
+      "postprocess (ms)": 1.43,
+      "số box": 203
+    },
+    {
+      "Cấu hình": "one-to-one NMS-free, conf 0.25",
+      "preprocess (ms)": 2.15,
+      "inference (ms)": 14.7,
+      "postprocess (ms)": 0.64,
+      "số box": 5
+    },
+    {
+      "Cấu hình": "one-to-one NMS-free, conf 0.001",
+      "preprocess (ms)": 3.81,
+      "inference (ms)": 28.71,
+      "postprocess (ms)": 0.9,
+      "số box": 204
+    }
+  ],
+  "result_4b": {
+    "flip_idx": "giải phẫu",
+    "epochs": 40,
+    "imgsz": 640,
+    "Box mAP50-95": 0.9303488492063492,
+    "Pose mAP50": 0.995,
+    "Pose mAP50-95": 0.4573462529843696,
+    "train (phút)": 4.5
+  },
+  "result_4c": null,
+  "answers": {
+    "Q1": "(a) 640x480 cho 80x60 + 40x30 + 20x15 = 4800 + 1200 + 300 = 6300 du doan tho. It hon 8400 vi letterbox auto=True chi pad canh len boi so cua 32 (480) thay vi pad thanh hinh vuong 640x640, nen moi tang feature co it hang hon (60/30/15 thay vi 80/40/20).\n(b) Nhan goc la cxcywh (x, y la TAM box) nhung bi doc nhu xywh (x, y la goc tren-trai). Khi ve, goc tren-trai bi dat vao vi tri tam that, nen box lech sang phai w/2 va xuong duoi h/2.",
+    "Q2": "Cot postprocess thay doi nhieu nhat, ro nhat o conf 0.001: one-to-many + NMS mat 1.62 ms (203 box) so voi 0.26 ms cua one-to-one, con o conf 0.25 la 0.86 ms so voi 0.26 ms; preprocess va inference gan nhu bang nhau vi hai head dung chung backbone.\nChi phi NMS tang theo so box ung vien (greedy NMS ~ O(N^2) phep IoU), nen khi conf thap hoac canh dong nguoi thi N lon va NMS cham han, trong khi head one-to-one chi can loc theo nguong, chi phi gan nhu khong doi.\nTren CPU/NPU, NMS la buoc tuan tu, nhieu re nhanh, kho song song hoa va thuong khong duoc tang toc (hoac phai chay ngoai NPU), nen phan postprocess chiem ty le lon hon trong tong latency; bo NMS giup pipeline gon va latency on dinh hon.",
+    "Q3": "(a) IoU 0.75 > 0.7 nen NMS coi box co score thap hon la duplicate va xoa no: camera chi dem duoc 1 nguoi thay vi 2 (mat recall). Tang nguong (vd 0.8) giu duoc nguoi dung sat nhau nhung de sot lai duplicate (tang false positive, dem thua); giam nguong thi loai duplicate sach hon nhung cang de xoa nham nguoi that dung gan nhau.\n(b) Head one-to-many cho moi object nhieu mau duong, nen tin hieu hoc day va on dinh, giup backbone/neck hoc dac trung tot va hoi tu nhanh; head one-to-one chi co 1 mau duong moi object nen tin hieu thua, kho train neu dung mot minh. Train ca hai (dual assignment) lay duoc chat luong dac trung cua one-to-many, con luc trien khai chi dung head one-to-one de khong can NMS.",
+    "Q4": "(a) Ban do semantic chi noi pixel nao la \"person\", khong phan biet ai voi ai, nen dem vung lien thong cho 8 vung trong khi thuc te co 4 nguoi. Dem thieu: hai nguoi dung sat/che nhau thi mask cua ho dinh lien thanh MOT vung. Dem thua: mot nguoi bi vat khac (cot, tui, nguoi khac) cat ngang thanh nhieu manh, cong them cac dom nhieu nho (17, 8, 4, 4, 3 pixel) bi dem nhu nguoi. Panoptic segmentation gan cho moi pixel ca class lan instance id: cac \"things\" nhu person moi doi tuong la mot segment rieng (giong instance), con \"stuff\" nhu road/sky chi co class, nen dem nguoi = dem so segment person.\n(b) Trong box \"bus\", semantic gan 63% pixel la \"train\" (23% la person vi nguoi dung truoc xe). Model train tren Cityscapes (anh duong pho Duc), noi \"train\" chu yeu la tau dien/tram; xe buyt dien nay dai, thap, nhieu cua kinh va chup can canh tu ben hong nen trong rat giong tram, trong khi bus trong Cityscapes it mau. Semantic segmentation phan loai tung pixel dua tren texture cuc bo, khong nhin ca doi tuong, nen de nham giua hai class nhin giong nhau.",
+    "Q5": "(a) YOLO26-seg: 32 prototype co do phan giai co dinh (1/4 anh vao, vd 160x160 voi anh 640), mask = to hop tuyen tinh cua prototype roi crop theo box va phong to. Object NHO chi phu vai o prototype nen bien mask tho/rang cua; object lon thi du chi tiet. Mask R-CNN: moi RoI luon ra mask 28x28 bat ke kich thuoc object, roi phong to ve kich thuoc box. Object LON (nhu xe buyt) bi phong to tu 28x28 len hang tram pixel nen bien tho; object nho thi 28x28 la du (thua) do phan giai.\n(b) Neu moi mask YOLO tu lay mask Mask R-CNN co IoU cao nhat thi viec ghep khong con 1-1: hai mask YOLO (vd hai nguoi dung sat nhau, hoac mot mask ca nguoi lan mot phan xe) co the cung chon mot mask Mask R-CNN, trong khi mot mask khac khong duoc ghep voi ai. Ket qua la trung lap, bo sot va IoU trung binh bi sai lech; Hungarian matching dam bao ghep 1-1 voi tong IoU lon nhat.",
+    "Q6": "(a) Diem A (tam box, roi vao ao khoac) cho mask CA NGUOI (47441 pixel, IoU 0.99 voi mask tu box). Diem B (80% chieu cao box, roi vao ong quan/dau goi) chi cho mot MANH NHO cua chan/quan (2714 pixel, IoU 0.00). Mot diem rat mo ho: no co the thuoc ve mot bo phan, ca nguoi, hay mot nhom nguoi, va SAM chon theo muc \"part/whole\" ma no thay hop ly, nen ket qua phu thuoc nhieu vao vi tri cham. Box xac dinh ro pham vi va kich thuoc doi tuong, nen SAM gan nhu luon tra ve mask cua ca object; them nua box lay tu detector nen co san class, phu hop de tu dong hoa ma khong can nguoi chon diem.\n(b) Dung SAM truc tiep khi can phan doan doi tuong bat ky/class moi xuat hien lien tuc (open-world), so luong anh it, co GPU manh va khong gap ve latency (vd cong cu gan nhan tuong tac, phan tich offline). Neu class co dinh (vd mu bao ho) va can chay realtime tren camera/edge, chi dung SAM (+ detector) de tao nhan, sua tay cac ca sai, roi fine-tune mot YOLO26-seg nho: model nho nhanh hon nhieu, re hon, chay duoc tren thiet bi bien va khong can prompt.",
+    "Q7": "Voi KP_THR = -100, Keypoint R-CNN van ve du 17 diem: dau goi va mat ca cua ca hai nguoi bi \"dan\" sat mep duoi anh (y ~ 700-718 tren anh cao 720 px, vd left_knee y=715, right_ankle y=700), noi heatmap cua chung bi cat. Ly do: giai ma heatmap bang argmax LUON tra ve mot vi tri trong vung RoI/anh, ke ca khi heatmap gan nhu phang (khong co dinh that) - argmax khong biet noi \"khong co\". Vi vay moi keypoint can mot diem tin cay (logit dinh heatmap, hoac conf/visibility nhu YOLO: cac diem nay chi ~0.001) de loc ra cac diem bi che/ngoai khung; neu khong, cac luat phia sau (goc khop, luat nga) se tinh tren toa do rac.",
+    "Q8": "Tren do thi trai: nguoi 40x80 roi xuong duoi OKS 0.5 khi sai so chi khoang 7 px; nguoi 100x200 khoang 17-18 px; nguoi 250x500 den 30 px van con ~0.65 (chua xuong 0.5). OKS chuan hoa sai so theo dien tich object (s^2) nen cung so pixel, nguoi nho bi phat nang hon nhieu.\nSigma cua mat (0.025) nho hon hong (0.107) khoang 4 lan vi sigma duoc uoc luong tu do lech giua nhung nguoi gan nhan COCO: mat la diem nho, ro rang nen moi nguoi cham gan nhu trung nhau; hong bi quan ao che, khong co moc ro nen nguoi gan nhan lech nhau nhieu. Do do lech 8 px o mat chi con 0.53, o hong con 0.97.\nVoi camera cong gan tren cao, moi nguoi chi cao ~80 px (s^2 nho) nen chi lech vai pixel la OKS tut manh, dac biet o cac diem mat/mui. Can dung anh do phan giai cao hon/crop vung nguoi, model pose tot hon cho nguoi nho, va luat nghiep vu nen dua vao cac keypoint lon, on dinh (vai, hong) thay vi diem nho tren mat.",
+    "Q9": "(a) Bao nham: nguoi cui xuong nhat do, buoc buoc giay, ngoi xom hoac nam nghi tren ghe/san co chu dich; tho may dang nam sua xe; camera goc nghieng/ong kinh goc rong lam thanh nguoi bi meo. Bo sot: nguoi nga ngoi bet xuong (than van gan thang dung), nga ve phia camera (than bi rut ngan, goc nghieng nho), nga bi che khuat (vai/hong khong du tin cay -> khong ket luan), hoac model khong phat hien duoc nguoi nam (nhu anh xoay o tren).\n(b) Anh xoay chi tim duoc 3 nguoi vi YOLO26-pose train tren COCO gom chu yeu nguoi dung/ngoi thang, augmentation khong co xoay 90 do; nguoi nam ngang la phan bo khac han (dang, ty le box, huong khung xuong), nen confidence giam va mot so nguoi bi bo qua.\n(c) Can them: theo doi doi tuong qua nhieu khung (tracking), luat theo thoi gian (thay doi goc than/chieu cao dot ngot roi nam yen mot luc lau), ket hop toc do di chuyen cua hong; lam muot va dung nguong confidence; mo hinh hanh dong (action recognition) tren chuoi keypoint; dieu chinh theo goc camera (dung phuong thang dung cua canh); va co che xac nhan/giam bao dong gia (nhieu khung lien tiep, nguoi van hanh kiem tra) truoc khi canh bao.",
+    "Q10": "Khong (hau nhu khong giam). Ca train va val deu 100% ho quay phai (train 210/0, val 53/0). Voi flip_idx dong nhat, anh lat trong luc train (ho quay trai) mang nhan \"chan phia camera = right_*\", tuc model hoc quy uoc theo VI TRI tren anh thay vi giai phau. Nhung tap val chi co ho quay phai, noi quy uoc vi tri va quy uoc giai phau trung nhau, nen OKS/mAP tren val van cao va khong lo ra loi.\nNo thanh bug that khi trien khai gap ho (hoac doi tuong) quay TRAI: camera dat o phia ben kia chuong, video quay nguoc huong, hay anh duoc lat. Khi do model goi chan gan camera la right_* trong khi giai phau la left_*, nen moi phan tich theo tung chan (phat hien con vat bi tap mot chan, dem buoc, dang di) se gan sai ben; va mAP tren tap val lat guong (muc 4C) se tut manh.",
+    "Q11": "(1) Lỗi đảo ngược nhãn trái/phải (như đảo chân trái/phải): Do đặc điểm hình học đối xứng của con hổ khi nhìn từ một phía, mô hình dễ nhầm lẫn các khớp chân bên trái và bên phải (ví dụ hock, paw). Biểu đồ sai số cho thấy các keypoint chân sau (hind_paw, hind_hock) có sai số cao nhất. Kết quả in ra có 4/53 ảnh nghi ngờ đảo trái/phải khi hoán đổi nhãn lại cho OKS cao hơn. Khắc phục bằng cách tăng cường dữ liệu (augmentation) với tỷ lệ fliplr hợp lý và gán nhãn giải phẫu chính xác sử dụng FLIP_IDX đúng cấu trúc xương.\n(2) Lỗi keypoint bị che khuất và mập mờ (như chân sau che nhau hoặc bị cỏ/vật cản che): Khi hổ di chuyển trong tự nhiên, các chân xa camera dễ bị cơ thể hoặc môi trường che khuất, làm giảm độ tin cậy của mô hình tại đó. Khắc phục bằng cách bổ sung thêm ảnh đa dạng bối cảnh vào tập train, điều chỉnh kiến trúc đầu ra để dự đoán kèm visibility score hoặc đặt ngưỡng lọc (KPT_CONF) cao hơn để loại bỏ dự đoán sai lệch lớn.",
+    "Q12": "(1) Việc sử dụng SIGMA_TIGER = 1/12 (khoảng 0.083) đồng nhất cho mọi keypoint là KHÔNG hợp lý. Các điểm rõ ràng, kích thước nhỏ và dễ định vị như mũi (nose) hoặc đầu (head) có độ lệch gán nhãn thực tế rất nhỏ và cần phạt nặng nếu lệch (sigma nhỏ). Ngược lại, các điểm mơ hồ như hông, gốc đuôi (tail_base) chịu ảnh hưởng lớn bởi độ dày lông, tư thế uốn lượn nên độ lệch nhãn giữa các chuyên gia rất lớn và cần phạt nhẹ hơn (sigma lớn).\n(2) Để ước lượng bộ sigma cho dataset custom: Ta cho một nhóm nhiều người gán nhãn độc lập (hoặc một người lặp lại nhiều lần) trên cùng một tập ảnh mẫu tiêu biểu. Với mỗi ảnh, tính khoảng cách Euclid (d) từ mỗi điểm gán nhãn đến điểm trung bình (trọng tâm) của keypoint đó. Chuẩn hóa khoảng cách này bằng cách chia cho căn bậc hai diện tích hộp bao (sqrt(area)) của đối tượng. Bộ sigma cho từng keypoint chính là độ lệch chuẩn (standard deviation) thu được từ các khoảng cách đã chuẩn hóa này."
+  },
+  "env": {
+    "device": "cuda",
+    "torch": "2.11.0+cu130",
+    "ultralytics": "8.4.171"
+  }
+}
